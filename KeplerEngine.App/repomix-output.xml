@@ -1,0 +1,1120 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+App.axaml
+App.axaml.cs
+KeplerEngine.App.csproj
+output.txt
+Program.cs
+Rendering/OrbitRenderer.cs
+ViewModels/MainViewModel.cs
+ViewModels/OrbitalBodyViewModel.cs
+Views/MainWindow.axaml
+Views/MainWindow.axaml.cs
+Views/Panels/OrbitEditorPanel.axaml
+Views/Panels/OrbitEditorPanel.axaml.cs
+Views/Panels/TelemetryPanel.axaml
+Views/Panels/TelemetryPanel.axaml.cs
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="App.axaml">
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeplerEngine.App.App">
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+</Application>
+</file>
+
+<file path="App.axaml.cs">
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using KeplerEngine.App.Views;
+
+namespace KeplerEngine.App;
+
+public partial class App : Application
+{
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow = new MainWindow();
+
+        base.OnFrameworkInitializationCompleted();
+    }
+}
+</file>
+
+<file path="KeplerEngine.App.csproj">
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>KeplerEngine.App</RootNamespace>
+    <AssemblyName>KeplerEngine.App</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Skia" Version="11.2.3" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KeplerEngine\KeplerEngine.csproj" />
+  </ItemGroup>
+</Project>
+</file>
+
+<file path="output.txt">
+Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
+   at KeplerEngine.App.Views.MainWindow..ctor() in D:\aprojects\KeplerSolution\KeplerEngine.App\Views\MainWindow.axaml.cs:line 26
+   at KeplerEngine.App.App.OnFrameworkInitializationCompleted() in D:\aprojects\KeplerSolution\KeplerEngine.App\App.axaml.cs:line 15
+   at Avalonia.AppBuilder.SetupUnsafe()
+   at Avalonia.AppBuilder.Setup()
+   at Avalonia.AppBuilder.SetupWithLifetime(IApplicationLifetime lifetime)
+   at Avalonia.ClassicDesktopStyleApplicationLifetimeExtensions.StartWithClassicDesktopLifetime(AppBuilder builder, String[] args, Action`1 lifetimeBuilder)
+   at KeplerEngine.App.Program.Main(String[] args) in D:\aprojects\KeplerSolution\KeplerEngine.App\Program.cs:line 9
+</file>
+
+<file path="Program.cs">
+using Avalonia;
+
+namespace KeplerEngine.App;
+
+class Program
+{
+    [STAThread]
+    public static void Main(string[] args) =>
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+    public static AppBuilder BuildAvaloniaApp() =>
+        AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .WithInterFont()
+            .LogToTrace();
+}
+</file>
+
+<file path="Rendering/OrbitRenderer.cs">
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Platform;
+using Avalonia.Rendering.SceneGraph;
+using Avalonia.Skia;
+using SkiaSharp;
+using KeplerEngine.Core;
+using KeplerEngine.Physics;
+using KeplerEngine.Simulation;
+using KeplerEngine.App.ViewModels;
+
+namespace KeplerEngine.App.Rendering;
+
+public class OrbitRenderer : Control
+{
+    // -- Simulation ----------
+    private OrbitSimulation? _sim;
+    private MainViewModel?   _vm;
+    private Action<double>?  _onTick;
+
+    // -- Camera ----------
+    private double  _metersPerPixel = 15_000;
+    private SKPoint _cameraCenter   = SKPoint.Empty;
+
+    // -- Drag ----------
+    private bool    _isDragging;
+    private Point   _dragStart;
+    private SKPoint _cameraCenterAtDragStart;
+
+    // -- Timer ----------
+    private readonly System.Timers.Timer _timer;
+    private DateTime _lastTick = DateTime.UtcNow;
+
+    // -- Colors ----------
+    private static readonly SKColor ColBackground = SKColor.Parse("#0d0d1a");
+    private static readonly SKColor ColGrid       = SKColor.Parse("#1a1a2e");
+    private static readonly SKColor ColPlanet     = SKColor.Parse("#4a90d9");
+    private static readonly SKColor ColOrbit      = SKColor.Parse("#2ecc71");
+    private static readonly SKColor ColSatellite  = SKColor.Parse("#e74c3c");
+    private static readonly SKColor ColText       = SKColor.Parse("#ecf0f1");
+    private static readonly SKColor ColPeriapsis  = SKColor.Parse("#f39c12");
+
+    public OrbitRenderer()
+    {
+        ClipToBounds = true;
+
+        PointerWheelChanged += OnWheel;
+        PointerPressed      += OnPointerPressed;
+        PointerMoved        += OnPointerMoved;
+        PointerReleased     += OnPointerReleased;
+
+        _timer = new System.Timers.Timer(16);
+        _timer.Elapsed += (_, _) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(InvalidateVisual);
+        };
+    }
+
+    // -- Public API ----------
+
+    public void SetSimulation(MainViewModel vm, Action<double> onTick)
+    {
+        _vm     = vm;
+        _onTick = onTick;
+        _sim    = vm.Simulation;
+
+        if (_sim.Celestials.Count > 0)
+        {
+            var pos = _sim.Celestials[0].Position;
+            _cameraCenter = new SKPoint((float)pos.X, (float)pos.Y);
+        }
+
+        _timer.Start();
+    }
+
+    public void StopSimulation() => _timer.Stop();
+
+    // -- Render ----------
+
+    public override void Render(DrawingContext context)
+    {
+        var now = DateTime.UtcNow;
+        double dt = (now - _lastTick).TotalSeconds;
+        _lastTick = now;
+
+        // Тикаем симуляцию через коллбэк
+        _onTick?.Invoke(dt);
+
+        var bounds = new Rect(Bounds.Size);
+        context.Custom(new SkiaDrawOperation(bounds, DrawScene));
+    }
+
+    private void DrawScene(SKCanvas canvas, SKRect bounds)
+    {
+        canvas.Clear(ColBackground);
+        if (_sim == null) return;
+
+        float cx = bounds.MidX;
+        float cy = bounds.MidY;
+
+        DrawGrid(canvas, bounds, cx, cy);
+
+        foreach (var body in _sim.Celestials)
+            DrawCelestialBody(canvas, body, cx, cy);
+
+        foreach (var body in _sim.Orbitals)
+        {
+            DrawOrbitPath(canvas, body, cx, cy);
+            DrawOrbitalBody(canvas, body, cx, cy);
+            DrawPeriapsisMarker(canvas, body, cx, cy);
+        }
+    }
+
+    // -- Drawing ----------
+
+    private void DrawGrid(SKCanvas canvas, SKRect bounds, float cx, float cy)
+    {
+        using var paint = new SKPaint
+        {
+            Color       = ColGrid,
+            StrokeWidth = 1,
+            IsAntialias = false
+        };
+
+        double gridStepM  = NiceGridStep();
+        float  gridStepPx = MetersToPixels(gridStepM);
+
+        float startX = cx - (int)(cx / gridStepPx) * gridStepPx - gridStepPx;
+        for (float x = startX; x < bounds.Right; x += gridStepPx)
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, paint);
+
+        float startY = cy - (int)(cy / gridStepPx) * gridStepPx - gridStepPx;
+        for (float y = startY; y < bounds.Bottom; y += gridStepPx)
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, paint);
+    }
+
+    private void DrawCelestialBody(SKCanvas canvas, CelestialBody body, float cx, float cy)
+    {
+        var (sx, sy) = WorldToScreen(body.Position.X, body.Position.Y, cx, cy);
+        float r = Math.Max(4f, MetersToPixels(body.Radius));
+
+        using var glowPaint = new SKPaint
+        {
+            Color      = ColPlanet.WithAlpha(40),
+            IsAntialias = true,
+            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.6f)
+        };
+        canvas.DrawCircle(sx, sy, r * 1.8f, glowPaint);
+
+        using var paint = new SKPaint { Color = ColPlanet, IsAntialias = true };
+        canvas.DrawCircle(sx, sy, r, paint);
+
+        using var textPaint = new SKPaint
+        {
+            Color       = ColText,
+            TextSize    = 13,
+            IsAntialias = true
+        };
+        canvas.DrawText(body.Name, sx + r + 4, sy - r - 4, textPaint);
+    }
+
+    private void DrawOrbitPath(SKCanvas canvas, KeplerEngine.Physics.OrbitalBody body, float cx, float cy)
+    {
+        var points = body.GetOrbitPoints(256);
+
+        using var paint = new SKPaint
+        {
+            Color       = ColOrbit.WithAlpha(180),
+            StrokeWidth = 1.5f,
+            IsAntialias = true,
+            IsStroke    = true
+        };
+
+        using var path = new SKPath();
+        bool first = true;
+        foreach (var p in points)
+        {
+            var (sx, sy) = WorldToScreen(p.X, p.Y, cx, cy);
+            if (first) { path.MoveTo(sx, sy); first = false; }
+            else          path.LineTo(sx, sy);
+        }
+        path.Close();
+        canvas.DrawPath(path, paint);
+    }
+
+    private void DrawOrbitalBody(SKCanvas canvas, KeplerEngine.Physics.OrbitalBody body, float cx, float cy)
+    {
+        var pos = body.Position;
+        var (sx, sy) = WorldToScreen(pos.X, pos.Y, cx, cy);
+
+        using var paint = new SKPaint { Color = ColSatellite, IsAntialias = true };
+        canvas.DrawCircle(sx, sy, 5, paint);
+
+        var sv     = body.CurrentState;
+        double vScale = sv.Velocity.Magnitude > 0 ? 30.0 / sv.Velocity.Magnitude : 0;
+        float  vx  = sx + (float)(sv.Velocity.X * vScale);
+        float  vy  = sy - (float)(sv.Velocity.Y * vScale);
+
+        using var velPaint = new SKPaint
+        {
+            Color       = SKColors.Yellow.WithAlpha(200),
+            StrokeWidth = 1.5f,
+            IsAntialias = true
+        };
+        canvas.DrawLine(sx, sy, vx, vy, velPaint);
+
+        using var textPaint = new SKPaint
+        {
+            Color       = ColText,
+            TextSize    = 12,
+            IsAntialias = true
+        };
+        string label = $"{body.Name}  {body.Speed:F0} m/s  {body.Altitude / 1000:F0} km";
+        canvas.DrawText(label, sx + 8, sy - 8, textPaint);
+    }
+
+    private void DrawPeriapsisMarker(SKCanvas canvas, KeplerEngine.Physics.OrbitalBody body, float cx, float cy)
+    {
+        var snap = body.Elements.Clone();
+        snap.TrueAnomaly = 0;
+        var sv = KeplerEngine.Orbital.StateVector.FromKeplerian(snap, body.Primary.Mu);
+        var (px, py) = WorldToScreen(
+            sv.Position.X + body.Primary.Position.X,
+            sv.Position.Y + body.Primary.Position.Y,
+            cx, cy);
+
+        using var paint = new SKPaint { Color = ColPeriapsis, IsAntialias = true };
+        canvas.DrawCircle(px, py, 3, paint);
+    }
+
+    // -- Coordinate transforms ----------
+
+    private (float x, float y) WorldToScreen(double wx, double wy, float cx, float cy)
+    {
+        float sx = cx + (float)((wx - _cameraCenter.X) / _metersPerPixel);
+        float sy = cy - (float)((wy - _cameraCenter.Y) / _metersPerPixel);
+        return (sx, sy);
+    }
+
+    private float MetersToPixels(double meters) => (float)(meters / _metersPerPixel);
+
+    // -- Input ----------
+
+    private void OnWheel(object? sender, PointerWheelEventArgs e)
+    {
+        double factor = e.Delta.Y > 0 ? 0.85 : 1.15;
+        _metersPerPixel *= factor;
+        _metersPerPixel  = Math.Clamp(_metersPerPixel, 100, 1e9);
+        InvalidateVisual();
+    }
+
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _isDragging              = true;
+        _dragStart               = e.GetPosition(this);
+        _cameraCenterAtDragStart = _cameraCenter;
+    }
+
+    private void OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_isDragging) return;
+        var pos = e.GetPosition(this);
+        double dx = (pos.X - _dragStart.X) * _metersPerPixel;
+        double dy = (pos.Y - _dragStart.Y) * _metersPerPixel;
+        _cameraCenter = new SKPoint(
+            _cameraCenterAtDragStart.X - (float)dx,
+            _cameraCenterAtDragStart.Y + (float)dy);
+        InvalidateVisual();
+    }
+
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e) =>
+        _isDragging = false;
+
+    // -- Utilities ----------
+
+    private double NiceGridStep()
+    {
+        double targetPx = 80.0;
+        double raw  = targetPx * _metersPerPixel;
+        double mag  = Math.Pow(10, Math.Floor(Math.Log10(raw)));
+        double norm = raw / mag;
+        double nice = norm < 2 ? 1 : norm < 5 ? 2 : 5;
+        return nice * mag;
+    }
+}
+
+// -- SkiaSharp draw operation ----------
+
+internal class SkiaDrawOperation : ICustomDrawOperation
+{
+    private readonly Action<SKCanvas, SKRect> _draw;
+    public Rect Bounds { get; }
+
+    public SkiaDrawOperation(Rect bounds, Action<SKCanvas, SKRect> draw)
+    {
+        Bounds = bounds;
+        _draw  = draw;
+    }
+
+    public void Render(ImmediateDrawingContext context)
+    {
+        var skia = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
+        if (skia == null) return;
+        using var lease  = skia.Lease();
+        var canvas = lease.SkCanvas;
+        var bounds = new SKRect(0, 0, (float)Bounds.Width, (float)Bounds.Height);
+        _draw(canvas, bounds);
+    }
+
+    public bool Equals(ICustomDrawOperation? other) => false;
+    public bool HitTest(Point p) => Bounds.Contains(p);
+    public void Dispose() { }
+}
+</file>
+
+<file path="ViewModels/MainViewModel.cs">
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using KeplerEngine.Simulation;
+
+namespace KeplerEngine.App.ViewModels;
+
+public class MainViewModel : INotifyPropertyChanged
+{
+    public OrbitSimulation Simulation { get; }
+    public OrbitalBodyViewModel? SelectedBody { get; private set; }
+
+    public string ClockText     => Simulation.Clock.FormatUT();
+    public string WarpText      => Simulation.Clock.WarpLabel;
+    public bool   IsPaused      => Simulation.Clock.Paused;
+    public string PauseLabel    => IsPaused ? "▶ Resume" : "⏸ Pause";
+
+    public MainViewModel(OrbitSimulation sim)
+    {
+        Simulation = sim;
+
+        if (sim.Orbitals.Count > 0)
+            SelectedBody = new OrbitalBodyViewModel(sim.Orbitals[0]);
+    }
+
+    // Called on every tick from the renderer
+    public void Tick(double realDt)
+    {
+        Simulation.Tick(realDt);
+        SelectedBody?.RefreshTelemetry();
+
+        OnPropertyChanged(nameof(ClockText));
+        OnPropertyChanged(nameof(WarpText));
+    }
+
+    public void TogglePause()
+    {
+        Simulation.Clock.Toggle();
+        OnPropertyChanged(nameof(IsPaused));
+        OnPropertyChanged(nameof(PauseLabel));
+    }
+
+    public void WarpUp()   { Simulation.Clock.WarpUp();   OnPropertyChanged(nameof(WarpText)); }
+    public void WarpDown() { Simulation.Clock.WarpDown(); OnPropertyChanged(nameof(WarpText)); }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+</file>
+
+<file path="ViewModels/OrbitalBodyViewModel.cs">
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using KeplerEngine.Core;
+using KeplerEngine.Physics;
+
+namespace KeplerEngine.App.ViewModels;
+
+public class OrbitalBodyViewModel : INotifyPropertyChanged
+{
+    private readonly OrbitalBody _body;
+    private bool _suppressUpdate; // Preventing recursion during updates
+
+    public OrbitalBodyViewModel(OrbitalBody body)
+    {
+        _body = body;
+    }
+
+    // ── Keplerian Elements ----------
+
+    // Semi-major axis [km] — displayed in kilometers in the UI, but in meters in the engine
+    public double SemiMajorAxisKm
+    {
+        get => _body.Elements.SemiMajorAxis / 1000.0;
+        set
+        {
+            if (_suppressUpdate) return;
+            _body.Elements.SemiMajorAxis = Math.Max(value, _body.Primary.Radius / 1000.0 + 1) * 1000.0;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PeriapsisKm));
+            OnPropertyChanged(nameof(ApoapsisKm));
+            OnPropertyChanged(nameof(PeriodMin));
+        }
+    }
+
+    public double SemiMajorAxisMin => _body.Primary.Radius / 1000.0 + 1;
+    public double SemiMajorAxisMax => _body.Primary.Radius / 1000.0 * 20;
+
+    // Eccentricity [0 .. 0.99]
+    public double Eccentricity
+    {
+        get => _body.Elements.Eccentricity;
+        set
+        {
+            if (_suppressUpdate) return;
+            _body.Elements.Eccentricity = Math.Clamp(value, 0, 0.99);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PeriapsisKm));
+            OnPropertyChanged(nameof(ApoapsisKm));
+        }
+    }
+
+    // Inclination [deg]
+    public double InclinationDeg
+    {
+        get => _body.Elements.InclinationDeg;
+        set
+        {
+            if (_suppressUpdate) return;
+            _body.Elements.InclinationDeg = Math.Clamp(value, 0, 180);
+            OnPropertyChanged();
+        }
+    }
+
+    // LAN [deg]
+    public double LANDeg
+    {
+        get => _body.Elements.LANDeg;
+        set
+        {
+            if (_suppressUpdate) return;
+            _body.Elements.LANDeg = value;
+            OnPropertyChanged();
+        }
+    }
+
+    // Argument of Periapsis [deg]
+    public double ArgumentOfPeriapsisDeg
+    {
+        get => _body.Elements.ArgumentOfPeriapsisDeg;
+        set
+        {
+            if (_suppressUpdate) return;
+            _body.Elements.ArgumentOfPeriapsisDeg = value;
+            OnPropertyChanged();
+        }
+    }
+
+    // True Anomaly [deg]
+    public double TrueAnomalyDeg
+    {
+        get => _body.Elements.TrueAnomalyDeg;
+        set
+        {
+            if (_suppressUpdate) return;
+            _body.Elements.TrueAnomalyDeg = value;
+            OnPropertyChanged();
+        }
+    }
+
+    // -- Derived (read-only, telemetry) ----------
+
+    public double PeriapsisKm  => (_body.Elements.Periapsis  - _body.Primary.Radius) / 1000.0;
+    public double ApoapsisKm   => (_body.Elements.Apoapsis   - _body.Primary.Radius) / 1000.0;
+    public double AltitudeKm   => _body.Altitude / 1000.0;
+    public double SpeedMs      => _body.Speed;
+    public double PeriodMin    => _body.Period / 60.0;
+    public string BodyName     => _body.Name;
+    public string PrimaryName  => _body.Primary.Name;
+
+    // -- Called every simulation tick to refresh telemetry ----------
+
+    public void RefreshTelemetry()
+    {
+        _suppressUpdate = true;
+        OnPropertyChanged(nameof(AltitudeKm));
+        OnPropertyChanged(nameof(SpeedMs));
+        OnPropertyChanged(nameof(TrueAnomalyDeg));
+        OnPropertyChanged(nameof(SemiMajorAxisKm));
+        OnPropertyChanged(nameof(Eccentricity));
+        OnPropertyChanged(nameof(InclinationDeg));
+        OnPropertyChanged(nameof(LANDeg));
+        OnPropertyChanged(nameof(ArgumentOfPeriapsisDeg));
+        OnPropertyChanged(nameof(PeriapsisKm));
+        OnPropertyChanged(nameof(ApoapsisKm));
+        OnPropertyChanged(nameof(PeriodMin));
+        _suppressUpdate = false;
+    }
+
+    // -- INotifyPropertyChanged ----------
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+</file>
+
+<file path="Views/MainWindow.axaml">
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:KeplerEngine.App.Rendering"
+        xmlns:p="clr-namespace:KeplerEngine.App.Views.Panels"
+        x:Class="KeplerEngine.App.Views.MainWindow"
+        Title="KeplerEngine"
+        Width="1400" Height="860"
+        Background="#0d0d1a">
+
+  <Grid ColumnDefinitions="*,300" RowDefinitions="44,*">
+
+    <!-- Topbar -->
+    <StackPanel Grid.Row="0" Grid.Column="0"
+                Orientation="Horizontal" Spacing="8"
+                Background="#111122" VerticalAlignment="Stretch">
+      <Button Name="BtnPause"    Content="⏸ Pause" Width="90"  Margin="8,6"/>
+      <Button Name="BtnWarpDown" Content="◀"        Width="36"  Margin="0,6"/>
+      <TextBlock Name="TxtWarp"  Text="1×" Width="50"
+                 VerticalAlignment="Center" HorizontalAlignment="Center"
+                 Foreground="#f39c12" FontSize="14" FontFamily="Consolas"/>
+      <Button Name="BtnWarpUp"   Content="▶"        Width="36"  Margin="0,6"/>
+      <TextBlock Name="TxtUT"    Text="Y1 D001 00:00:00"
+                 VerticalAlignment="Center" Foreground="#2ecc71"
+                 FontSize="13" FontFamily="Consolas" Margin="16,0,0,0"/>
+    </StackPanel>
+
+    <Border Grid.Row="0" Grid.Column="1"
+            Background="#0e0e20" BorderBrush="#1e1e35" BorderThickness="1,0,0,0">
+      <TextBlock Text="ORBITAL PARAMETERS" FontSize="11" Foreground="#7f8c8d"
+                 FontWeight="Bold" LetterSpacing="2"
+                 VerticalAlignment="Center" Margin="12,0"/>
+    </Border>
+
+    <!-- Renderer -->
+    <r:OrbitRenderer Name="Renderer" Grid.Row="1" Grid.Column="0"/>
+
+    <!-- Right Panel -->
+    <Border Grid.Row="1" Grid.Column="1"
+            Background="#0e0e20" BorderBrush="#1e1e35" BorderThickness="1,0,0,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="12,12,12,16" Spacing="16">
+          <p:TelemetryPanel  Name="Telemetry"/>
+          <Separator Background="#2c3e50" Height="1"/>
+          <p:OrbitEditorPanel Name="OrbitEditor"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+  </Grid>
+</Window>
+</file>
+
+<file path="Views/MainWindow.axaml.cs">
+using Avalonia.Controls;
+using Avalonia.Threading;
+using KeplerEngine.App.Rendering;
+using KeplerEngine.App.ViewModels;
+using KeplerEngine.App.Views.Panels;
+using KeplerEngine.Simulation;
+
+namespace KeplerEngine.App.Views;
+
+public partial class MainWindow : Window
+{
+    private readonly MainViewModel _vm;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+
+        var sim = OrbitSimulation.KerbinExample();
+        _vm = new MainViewModel(sim);
+
+        var renderer = this.FindControl<OrbitRenderer>("Renderer")!;
+        renderer.SetSimulation(_vm, OnTick);
+
+        var editor = this.FindControl<OrbitEditorPanel>("OrbitEditor")!;
+        if (_vm.SelectedBody != null)
+            editor.SetViewModel(_vm.SelectedBody);
+
+        this.FindControl<Button>("BtnPause")!.Click    += (_, _) => TogglePause();
+        this.FindControl<Button>("BtnWarpUp")!.Click   += (_, _) => { _vm.WarpUp();   Refresh(); };
+        this.FindControl<Button>("BtnWarpDown")!.Click += (_, _) => { _vm.WarpDown(); Refresh(); };
+    }
+
+    private void OnTick(double realDt)
+    {
+        _vm.Tick(realDt);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            this.FindControl<TextBlock>("TxtUT")!.Text   = _vm.ClockText;
+            this.FindControl<TextBlock>("TxtWarp")!.Text = _vm.WarpText;
+
+            this.FindControl<TelemetryPanel>("Telemetry")!.Update(_vm);
+            this.FindControl<OrbitEditorPanel>("OrbitEditor")!.SyncFromVm();
+        });
+    }
+
+    private void TogglePause()
+    {
+        _vm.TogglePause();
+        this.FindControl<Button>("BtnPause")!.Content = _vm.PauseLabel;
+    }
+
+    private void Refresh()
+    {
+        this.FindControl<TextBlock>("TxtWarp")!.Text = _vm.WarpText;
+    }
+}
+</file>
+
+<file path="Views/Panels/OrbitEditorPanel.axaml">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeplerEngine.App.Views.Panels.OrbitEditorPanel">
+
+  <StackPanel Spacing="10">
+
+    <TextBlock Text="ORBIT EDITOR" FontSize="11" Foreground="#7f8c8d"
+               FontWeight="Bold" LetterSpacing="2"/>
+
+    <!-- Semi-major axis -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Semi-major axis" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblA" Text="— km"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderA" Minimum="601" Maximum="12000"
+                TickFrequency="1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputA" Text="700"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Eccentricity -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Eccentricity" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblE" Text="—"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderE" Minimum="0" Maximum="0.99"
+                TickFrequency="0.001" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputE" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Inclination -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Inclination" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblI" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderI" Minimum="0" Maximum="180"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputI" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- LAN -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="LAN (Ω)" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblLAN" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderLAN" Minimum="0" Maximum="360"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputLAN" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Argument of Periapsis -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Arg. of Periapsis (ω)" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblArgPe" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderArgPe" Minimum="0" Maximum="360"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputArgPe" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- True Anomaly -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="True Anomaly (ν)" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblNu" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderNu" Minimum="0" Maximum="360"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputNu" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <Separator Background="#2c3e50" Height="1" Margin="0,4"/>
+
+    <!-- Derived info -->
+    <TextBlock Text="DERIVED" FontSize="11" Foreground="#7f8c8d"
+               FontWeight="Bold" LetterSpacing="2"/>
+
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Periapsis alt." Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPeDerived"
+                 Foreground="#e67e22" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Apoapsis alt." Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtApDerived"
+                 Foreground="#3498db" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Period" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPeriodDerived"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+  </StackPanel>
+</UserControl>
+</file>
+
+<file path="Views/Panels/OrbitEditorPanel.axaml.cs">
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using KeplerEngine.App.ViewModels;
+
+namespace KeplerEngine.App.Views.Panels;
+
+public partial class OrbitEditorPanel : UserControl
+{
+    private OrbitalBodyViewModel? _vm;
+    private bool _suspendSync; // не даём слайдеру и TextBox гонять друг друга
+
+    public OrbitEditorPanel()
+    {
+        InitializeComponent();
+    }
+
+    public void SetViewModel(OrbitalBodyViewModel vm)
+    {
+        _vm = vm;
+
+        // Слайдеры
+        BindSlider("SliderA",     v => { vm.SemiMajorAxisKm = v;         SyncFromVm(); });
+        BindSlider("SliderE",     v => { vm.Eccentricity    = v;         SyncFromVm(); });
+        BindSlider("SliderI",     v => { vm.InclinationDeg  = v;         SyncFromVm(); });
+        BindSlider("SliderLAN",   v => { vm.LANDeg          = v;         SyncFromVm(); });
+        BindSlider("SliderArgPe", v => { vm.ArgumentOfPeriapsisDeg = v;  SyncFromVm(); });
+        BindSlider("SliderNu",    v => { vm.TrueAnomalyDeg  = v;         SyncFromVm(); });
+
+        // TextBox — применяем по Enter или потере фокуса
+        BindTextBox("InputA",     v => { vm.SemiMajorAxisKm = v;         SyncFromVm(); });
+        BindTextBox("InputE",     v => { vm.Eccentricity    = v;         SyncFromVm(); });
+        BindTextBox("InputI",     v => { vm.InclinationDeg  = v;         SyncFromVm(); });
+        BindTextBox("InputLAN",   v => { vm.LANDeg          = v;         SyncFromVm(); });
+        BindTextBox("InputArgPe", v => { vm.ArgumentOfPeriapsisDeg = v;  SyncFromVm(); });
+        BindTextBox("InputNu",    v => { vm.TrueAnomalyDeg  = v;         SyncFromVm(); });
+
+        SyncFromVm();
+    }
+
+    // Update all controls from the ViewModel (called on every tick)
+    public void SyncFromVm()
+    {
+        if (_vm == null || _suspendSync) return;
+        _suspendSync = true;
+
+        SetSlider("SliderA",     _vm.SemiMajorAxisKm);
+        SetSlider("SliderE",     _vm.Eccentricity);
+        SetSlider("SliderI",     _vm.InclinationDeg);
+        SetSlider("SliderLAN",   _vm.LANDeg);
+        SetSlider("SliderArgPe", _vm.ArgumentOfPeriapsisDeg);
+        SetSlider("SliderNu",    _vm.TrueAnomalyDeg);
+
+        SetInput("InputA",     $"{_vm.SemiMajorAxisKm:F1}");
+        SetInput("InputE",     $"{_vm.Eccentricity:F4}");
+        SetInput("InputI",     $"{_vm.InclinationDeg:F1}");
+        SetInput("InputLAN",   $"{_vm.LANDeg:F1}");
+        SetInput("InputArgPe", $"{_vm.ArgumentOfPeriapsisDeg:F1}");
+        SetInput("InputNu",    $"{_vm.TrueAnomalyDeg:F1}");
+
+        SetLabel("LblA",     $"{_vm.SemiMajorAxisKm:F1} km");
+        SetLabel("LblE",     $"{_vm.Eccentricity:F4}");
+        SetLabel("LblI",     $"{_vm.InclinationDeg:F1}°");
+        SetLabel("LblLAN",   $"{_vm.LANDeg:F1}°");
+        SetLabel("LblArgPe", $"{_vm.ArgumentOfPeriapsisDeg:F1}°");
+        SetLabel("LblNu",    $"{_vm.TrueAnomalyDeg:F1}°");
+
+        SetLabel("TxtPeDerived",     $"{_vm.PeriapsisKm:F1} km");
+        SetLabel("TxtApDerived",     $"{_vm.ApoapsisKm:F1} km");
+        SetLabel("TxtPeriodDerived", $"{_vm.PeriodMin:F1} min");
+
+        _suspendSync = false;
+    }
+
+    // -- Helpers ----------
+
+    private void BindSlider(string name, Action<double> onChange)
+    {
+        var slider = this.FindControl<Slider>(name)!;
+        slider.PropertyChanged += (_, e) =>
+        {
+            if (_suspendSync) return;
+            if (e.Property == RangeBase.ValueProperty)
+                onChange(slider.Value);
+        };
+    }
+
+    private void BindTextBox(string name, Action<double> onChange)
+    {
+        var box = this.FindControl<TextBox>(name)!;
+
+        box.KeyDown += (_, e) =>
+        {
+            if (e.Key != Avalonia.Input.Key.Enter) return;
+            if (double.TryParse(box.Text, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out double v))
+                onChange(v);
+        };
+
+        box.LostFocus += (_, _) =>
+        {
+            if (double.TryParse(box.Text, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out double v))
+                onChange(v);
+        };
+    }
+
+    private void SetSlider(string name, double value)
+    {
+        var s = this.FindControl<Slider>(name)!;
+        s.Value = Math.Clamp(value, s.Minimum, s.Maximum);
+    }
+
+    private void SetInput(string name, string text)
+        => this.FindControl<TextBox>(name)!.Text = text;
+
+    private void SetLabel(string name, string text)
+        => this.FindControl<TextBlock>(name)!.Text = text;
+}
+</file>
+
+<file path="Views/Panels/TelemetryPanel.axaml">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeplerEngine.App.Views.Panels.TelemetryPanel">
+
+  <StackPanel Spacing="6" Margin="0,0,0,12">
+
+    <TextBlock Text="TELEMETRY" FontSize="11" Foreground="#7f8c8d"
+               FontWeight="Bold" LetterSpacing="2"/>
+
+    <!-- UT -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Universal Time" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtUT" Text="—"
+                 Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Warp -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Time Warp" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtWarp" Text="1×"
+                 Foreground="#f39c12" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <Separator Background="#2c3e50" Height="1" Margin="0,4"/>
+
+    <!-- Altitude -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Altitude" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtAlt" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Speed -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Speed" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtSpeed" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Period -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Period" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPeriod" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Periapsis -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Periapsis" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPe" Text="—"
+                 Foreground="#e67e22" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Apoapsis -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Apoapsis" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtAp" Text="—"
+                 Foreground="#3498db" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- True Anomaly -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="True Anomaly" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtNu" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+  </StackPanel>
+</UserControl>
+</file>
+
+<file path="Views/Panels/TelemetryPanel.axaml.cs">
+using Avalonia.Controls;
+using KeplerEngine.App.ViewModels;
+
+namespace KeplerEngine.App.Views.Panels;
+
+public partial class TelemetryPanel : UserControl
+{
+    public TelemetryPanel()
+    {
+        InitializeComponent();
+    }
+
+    public void Update(MainViewModel vm)
+    {
+        this.FindControl<TextBlock>("TxtUT")!.Text     = vm.ClockText;
+        this.FindControl<TextBlock>("TxtWarp")!.Text   = vm.WarpText;
+
+        var body = vm.SelectedBody;
+        if (body == null) return;
+
+        this.FindControl<TextBlock>("TxtAlt")!.Text    = $"{body.AltitudeKm:F1} km";
+        this.FindControl<TextBlock>("TxtSpeed")!.Text  = $"{body.SpeedMs:F0} m/s";
+        this.FindControl<TextBlock>("TxtPeriod")!.Text = $"{body.PeriodMin:F1} min";
+        this.FindControl<TextBlock>("TxtPe")!.Text     = $"{body.PeriapsisKm:F1} km";
+        this.FindControl<TextBlock>("TxtAp")!.Text     = $"{body.ApoapsisKm:F1} km";
+        this.FindControl<TextBlock>("TxtNu")!.Text     = $"{body.TrueAnomalyDeg:F2}°";
+    }
+}
+</file>
+
+</files>

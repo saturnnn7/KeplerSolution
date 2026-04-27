@@ -1,0 +1,8 @@
+Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
+   at KeplerEngine.App.Views.MainWindow..ctor() in D:\aprojects\KeplerSolution\KeplerEngine.App\Views\MainWindow.axaml.cs:line 26
+   at KeplerEngine.App.App.OnFrameworkInitializationCompleted() in D:\aprojects\KeplerSolution\KeplerEngine.App\App.axaml.cs:line 15
+   at Avalonia.AppBuilder.SetupUnsafe()
+   at Avalonia.AppBuilder.Setup()
+   at Avalonia.AppBuilder.SetupWithLifetime(IApplicationLifetime lifetime)
+   at Avalonia.ClassicDesktopStyleApplicationLifetimeExtensions.StartWithClassicDesktopLifetime(AppBuilder builder, String[] args, Action`1 lifetimeBuilder)
+   at KeplerEngine.App.Program.Main(String[] args) in D:\aprojects\KeplerSolution\KeplerEngine.App\Program.cs:line 9

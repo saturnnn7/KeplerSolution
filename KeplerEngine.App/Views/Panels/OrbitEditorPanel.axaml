@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeplerEngine.App.Views.Panels.OrbitEditorPanel">
+
+  <StackPanel Spacing="10">
+
+    <TextBlock Text="ORBIT EDITOR" FontSize="11" Foreground="#7f8c8d"
+               FontWeight="Bold" LetterSpacing="2"/>
+
+    <!-- Semi-major axis -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Semi-major axis" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblA" Text="— km"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderA" Minimum="601" Maximum="12000"
+                TickFrequency="1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputA" Text="700"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Eccentricity -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Eccentricity" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblE" Text="—"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderE" Minimum="0" Maximum="0.99"
+                TickFrequency="0.001" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputE" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Inclination -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Inclination" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblI" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderI" Minimum="0" Maximum="180"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputI" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- LAN -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="LAN (Ω)" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblLAN" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderLAN" Minimum="0" Maximum="360"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputLAN" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- Argument of Periapsis -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Arg. of Periapsis (ω)" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblArgPe" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderArgPe" Minimum="0" Maximum="360"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputArgPe" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <!-- True Anomaly -->
+    <StackPanel Spacing="3">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="True Anomaly (ν)" Foreground="#95a5a6" FontSize="12"/>
+        <TextBlock Grid.Column="1" Name="LblNu" Text="—°"
+                   Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,70">
+        <Slider Name="SliderNu" Minimum="0" Maximum="360"
+                TickFrequency="0.1" IsSnapToTickEnabled="False" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Name="InputNu" Text="0"
+                 FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+    <Separator Background="#2c3e50" Height="1" Margin="0,4"/>
+
+    <!-- Derived info -->
+    <TextBlock Text="DERIVED" FontSize="11" Foreground="#7f8c8d"
+               FontWeight="Bold" LetterSpacing="2"/>
+
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Periapsis alt." Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPeDerived"
+                 Foreground="#e67e22" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Apoapsis alt." Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtApDerived"
+                 Foreground="#3498db" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Period" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPeriodDerived"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+  </StackPanel>
+</UserControl>

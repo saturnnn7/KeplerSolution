@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:KeplerEngine.App.Rendering"
+        xmlns:p="clr-namespace:KeplerEngine.App.Views.Panels"
+        x:Class="KeplerEngine.App.Views.MainWindow"
+        Title="KeplerEngine"
+        Width="1400" Height="860"
+        Background="#0d0d1a">
+
+  <Grid ColumnDefinitions="*,300" RowDefinitions="44,*">
+
+    <!-- Topbar -->
+    <StackPanel Grid.Row="0" Grid.Column="0"
+                Orientation="Horizontal" Spacing="8"
+                Background="#111122" VerticalAlignment="Stretch">
+      <Button Name="BtnPause"    Content="⏸ Pause" Width="90"  Margin="8,6"/>
+      <Button Name="BtnWarpDown" Content="◀"        Width="36"  Margin="0,6"/>
+      <TextBlock Name="TxtWarp"  Text="1×" Width="50"
+                 VerticalAlignment="Center" HorizontalAlignment="Center"
+                 Foreground="#f39c12" FontSize="14" FontFamily="Consolas"/>
+      <Button Name="BtnWarpUp"   Content="▶"        Width="36"  Margin="0,6"/>
+      <TextBlock Name="TxtUT"    Text="Y1 D001 00:00:00"
+                 VerticalAlignment="Center" Foreground="#2ecc71"
+                 FontSize="13" FontFamily="Consolas" Margin="16,0,0,0"/>
+    </StackPanel>
+
+    <Border Grid.Row="0" Grid.Column="1"
+            Background="#0e0e20" BorderBrush="#1e1e35" BorderThickness="1,0,0,0">
+      <TextBlock Text="ORBITAL PARAMETERS" FontSize="11" Foreground="#7f8c8d"
+                 FontWeight="Bold" LetterSpacing="2"
+                 VerticalAlignment="Center" Margin="12,0"/>
+    </Border>
+
+    <!-- Renderer -->
+    <r:OrbitRenderer Name="Renderer" Grid.Row="1" Grid.Column="0"/>
+
+    <!-- Right Panel -->
+    <Border Grid.Row="1" Grid.Column="1"
+            Background="#0e0e20" BorderBrush="#1e1e35" BorderThickness="1,0,0,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="12,12,12,16" Spacing="16">
+          <p:TelemetryPanel  Name="Telemetry"/>
+          <Separator Background="#2c3e50" Height="1"/>
+          <p:OrbitEditorPanel Name="OrbitEditor"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+  </Grid>
+</Window>

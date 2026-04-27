@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeplerEngine.App.Views.Panels.TelemetryPanel">
+
+  <StackPanel Spacing="6" Margin="0,0,0,12">
+
+    <TextBlock Text="TELEMETRY" FontSize="11" Foreground="#7f8c8d"
+               FontWeight="Bold" LetterSpacing="2"/>
+
+    <!-- UT -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Universal Time" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtUT" Text="—"
+                 Foreground="#2ecc71" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Warp -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Time Warp" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtWarp" Text="1×"
+                 Foreground="#f39c12" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <Separator Background="#2c3e50" Height="1" Margin="0,4"/>
+
+    <!-- Altitude -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Altitude" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtAlt" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Speed -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Speed" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtSpeed" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Period -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Period" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPeriod" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Periapsis -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Periapsis" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtPe" Text="—"
+                 Foreground="#e67e22" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- Apoapsis -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Apoapsis" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtAp" Text="—"
+                 Foreground="#3498db" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+    <!-- True Anomaly -->
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="True Anomaly" Foreground="#95a5a6" FontSize="12"/>
+      <TextBlock Grid.Column="1" Name="TxtNu" Text="—"
+                 Foreground="White" FontSize="12" FontFamily="Consolas"/>
+    </Grid>
+
+  </StackPanel>
+</UserControl>
